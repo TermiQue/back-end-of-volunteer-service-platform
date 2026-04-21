@@ -1,24 +1,52 @@
 # 志愿服务平台后端
 
-## 项目简介
+基于 Node.js + Express 的志愿服务平台后端，覆盖微信登录、会话认证、志愿项目管理、签到签退、时长申诉与审核流程。
 
-这是一个基于 Node.js + Express 的后端服务，当前重点实现微信登录与会话认证能力，包含：
+## 技术栈
 
-- 微信登录（创建用户与会话）
-- accessToken 鉴权
-- refreshToken 轮换刷新
-- 当前会话登出
+- Node.js（ESM）
+- Express 5
+- MySQL（mysql2/promise）
+- JWT（accessToken + refreshToken）
+- Axios（微信 API 调用）
+- AWS S3 SDK（对象存储头像上传）
 
-## 目录说明
+## 核心能力
 
-- `src/controllers`: 接口控制器
-- `src/services`: 业务编排层
-- `src/dao`: 数据访问层
-- `src/routes`: 路由定义
-- `src/utils`: 通用工具（鉴权、响应、错误处理）
-- `docs`: 设计文档
+- 用户认证
+	- 微信登录
+	- 会话刷新与登出
+	- 个人资料读取与更新（昵称、头像）
+- 志愿项目
+	- 超级管理员创建草稿项目
+	- 管理员/负责人开启和结束项目
+	- 超级管理员修改项目负责人（项目结束后禁止修改）
+	- 管理员查询项目、志愿者及详情
+- 二维码签到
+	- 管理员生成签到码/签退码
+	- 志愿者扫码签到/签退
+- 申诉审核
+	- 志愿者提交时长申诉
+	- 志愿者查询可申诉目标与我的申诉进度
+	- 管理员按状态筛选并审批/拒绝申诉
 
-## 快速启动
+## 目录结构
+
+```text
+.
+├── serve.js                # 启动入口
+├── src
+│   ├── app.js              # 应用装配（中间件、路由、错误处理）
+│   ├── config              # 环境与常量配置
+│   ├── controllers         # 控制器层
+│   ├── services            # 业务编排层
+│   ├── dao                 # 数据访问层
+│   ├── routes              # 路由定义
+│   └── utils               # 通用工具（鉴权、日志、错误、响应、上传）
+└── docs                    # 设计与接口文档
+```
+
+## 快速开始
 
 1. 安装依赖
 
@@ -26,81 +54,112 @@
 npm install
 ```
 
-2. 启动服务
+2. 配置环境变量（建议创建 `.env`）
+
+```env
+PORT=8080
+
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=your_password
+DB_NAME=volunteer
+
+JWT_SECRET=replace-with-strong-secret
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRES_SECONDS=3600
+REFRESH_TOKEN_EXPIRES_SECONDS=604800
+
+WECHAT_APP_ID=your_app_id
+WECHAT_APP_SECRET=your_app_secret
+
+OBJECT_STORAGE_BUCKET=your_bucket
+OBJECT_STORAGE_ACCESS_KEY=your_access_key
+OBJECT_STORAGE_SECRET_KEY=your_secret_key
+OBJECT_STORAGE_INTERNAL_URL=https://internal-endpoint
+OBJECT_STORAGE_URL=https://public-endpoint
+
+CORS_ALLOWED_ORIGINS=http://127.0.0.1:4173
+```
+
+3. 启动服务
 
 ```bash
 npm run dev
 ```
 
-3. 健康检查
+4. 健康检查
 
 ```bash
 curl -sS http://127.0.0.1:8080/healthz
 ```
 
-## 日志查看
+## 运行脚本
 
-当前项目把日志输出到标准输出，也就是你启动服务的那个终端窗口。
+- `npm run dev`: 开发启动（当前与 `start` 一致）
+- `npm start`: 生产启动
 
-- 本地开发时直接运行 `npm run dev`，在终端里查看启动日志、请求日志、错误日志。
-- 每条请求日志都会带 `requestId`，排查问题时可以按这个 ID 关联启动、请求和错误信息。
-- 默认开发环境使用可读格式，生产环境默认输出 JSON，便于后续接入 PM2、Docker、systemd 或日志采集系统。
-- 可以通过环境变量控制输出：
+## 主要路由分组
+
+- 认证与用户相关（无需/需要登录）
+	- `POST /api/login/wechat`
+	- `GET /api/auth/me`
+	- `POST /api/auth/refresh-token`
+	- `POST /api/auth/logout`
+	- `GET/POST /api/auth/nickname`
+	- `GET/POST /api/auth/avatar`
+	- `POST /api/auth/profile`
+	- `POST /api/auth/profile/refresh`
+	- `GET /api/auth/projects`
+- 内容与申诉（需登录）
+	- `GET /api/content/public-file`
+	- `POST /api/projects/scan`
+	- `GET /api/appeals/targets`
+	- `GET /api/appeals/my`
+	- `POST /api/appeals`
+- 管理端（需管理员权限）
+	- `GET /api/admin/projects`
+	- `POST /api/admin/projects`
+	- `POST /api/admin/projects/:projectId/responsible`
+	- `POST /api/admin/projects/:projectId/start`
+	- `POST /api/admin/projects/:projectId/end`
+	- `GET /api/admin/projects/:projectId/qr/checkin`
+	- `GET /api/admin/projects/:projectId/qr/checkout`
+	- `GET /api/admin/volunteers`
+	- `GET /api/admin/volunteers/:userId`
+	- `GET /api/admin/admins`
+	- `GET /api/admin/appeals`
+	- `POST /api/admin/appeals/:appealId/approve`
+	- `POST /api/admin/appeals/:appealId/reject`
+
+完整参数与返回示例请查看 `docs/API.md`。
+
+## 权限模型（简要）
+
+- 普通用户：`role=1`
+- 管理员：`role=2`
+- 超级管理员：`role=3`
+
+管理端路由统一要求登录且具备管理员权限，部分接口（如创建项目、修改负责人、管理员列表）额外要求超级管理员。
+
+## 日志与排障
+
+- 服务日志输出到标准输出。
+- 每个请求都会生成/透传 `x-request-id`，便于排查链路。
+- 可通过环境变量控制日志：
 	- `LOG_LEVEL=debug|info|warn|error`
 	- `LOG_FORMAT=pretty|json`
-	- `LOG_REDACT=false`：仅用于本地调试，关闭字段脱敏，方便查看原始值
+	- `LOG_REDACT=false`（仅建议本地调试）
 
-如果以后用 PM2，可以通过 `pm2 logs` 查看；如果用 Docker，则查看容器标准输出；如果用 systemd，则用 `journalctl` 查看对应服务日志。
+## 常见联调提示
 
-## 环境变量
+- 所有受保护接口需在 `Authorization` 中传 `Bearer <accessToken>`。
+- 跨域联调时请正确设置 `CORS_ALLOWED_ORIGINS`。
+- 头像上传使用 `multipart/form-data`，字段名为 `avatar`。
 
-主要环境变量如下：
+## 相关文档
 
-- `PORT`
-- `DB_HOST`
-- `DB_PORT`
-- `DB_USER`
-- `DB_PASSWORD`
-- `DB_NAME`
-- `JWT_SECRET`
-- `JWT_ALGORITHM`
-- `ACCESS_TOKEN_EXPIRES_SECONDS`
-- `REFRESH_TOKEN_EXPIRES_SECONDS`
-- `WECHAT_APP_ID`
-- `WECHAT_APP_SECRET`
-- `OBJECT_STORAGE_BUCKET`
-- `OBJECT_STORAGE_ACCESS_KEY`
-- `OBJECT_STORAGE_SECRET_KEY`
-- `OBJECT_STORAGE_INTERNAL_URL`
-- `OBJECT_STORAGE_URL`
-- `CORS_ALLOWED_ORIGINS`（逗号分隔，默认 `http://127.0.0.1:4173`）
-- `CORS_ALLOWED_METHODS`（逗号分隔，默认 `GET,POST,PUT,PATCH,DELETE,OPTIONS`）
-- `CORS_ALLOWED_HEADERS`（逗号分隔，默认 `Authorization,Content-Type`）
-- `CORS_EXPOSED_HEADERS`（逗号分隔，默认 `x-request-id`）
-
-### 头像上传说明
-
-- `POST /api/auth/user` 需要使用 `multipart/form-data`。
-- 请求字段包含 `updateType`，可选值：`nickname`、`avatar`、`both`。
-- 当 `updateType=nickname` 时只传 `nickname`；当 `updateType=avatar` 时只传 `avatar`；`both` 需两者都传。
-- `avatar` 会由后端通过 `OBJECT_STORAGE_INTERNAL_URL` 上传到 Sealos 对象存储。
-- 数据库存储和接口返回的头像地址使用 `OBJECT_STORAGE_URL` 作为前缀，保证前端可直接访问。
-
-### 本地浏览器联调（CORS）
-
-如果前端页面和后端不在同源（例如前端 `http://127.0.0.1:4173`，后端 `http://127.0.0.1:8080`），浏览器会触发 CORS 校验。
-
-你可以在启动前显式设置允许来源：
-
-```bash
-export CORS_ALLOWED_ORIGINS="http://127.0.0.1:4173"
-npm run dev
-```
-
-当前默认允许请求头包含 `Authorization`，可直接用 Bearer Token 调试受保护接口。
-
-## 文档
-
-- 接口文档: `API.md`
-- 认证设计: `docs/auth-design.md`
-- 数据库说明: `docs/database.md`
+- `docs/API.md`: 接口文档
+- `docs/auth-design.md`: 认证与权限设计
+- `docs/database.md`: 数据库说明
+- `docs/update.md`: 变更记录
