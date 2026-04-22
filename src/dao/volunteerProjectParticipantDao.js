@@ -225,30 +225,21 @@ export async function queryParticipantProjectsByUserId(conn, filters) {
   const [rows] = await conn.execute(
     `
     SELECT
-      p.id,
-      p.project_id,
-      p.user_id,
       p.check_in_at,
       p.check_out_at,
-      p.check_in_source,
-      p.check_out_source,
       p.is_valid,
       p.settlement_hours,
       p.note,
-      p.created_at AS participant_created_at,
-      p.updated_at AS participant_updated_at,
       pr.name AS project_name,
       pr.description AS project_description,
       pr.start_time,
       pr.end_time,
-      pr.duration_hours,
-      pr.status AS project_status,
-      pr.created_by_id,
-      pr.responsible_id,
-      pr.created_at AS project_created_at,
-      pr.updated_at AS project_updated_at
+      creator.name AS creator_name,
+      responsible.name AS responsible_name
     FROM volunteer_project_participants p
     INNER JOIN volunteer_projects pr ON pr.project_id = p.project_id
+    LEFT JOIN volunteers creator ON creator.user_id = pr.created_by_id
+    LEFT JOIN volunteers responsible ON responsible.user_id = pr.responsible_id
     ${whereSql}
     ORDER BY p.updated_at DESC, p.id DESC
     LIMIT ${safeLimit} OFFSET ${safeOffset}

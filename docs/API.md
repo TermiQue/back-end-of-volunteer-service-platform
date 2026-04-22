@@ -331,8 +331,18 @@ Query 参数:
 
 返回字段重点:
 
-- 参与记录: `check_in_at`、`check_out_at`、`is_valid`、`settlement_hours`、`note`
-- 项目字段: `project_status`、`created_by_id`、`responsible_id`
+- `items[]` 字段：
+  - `projectName`：项目名
+  - `projectDescription`：项目描述
+  - `creatorName`：创建者姓名
+  - `responsibleName`：负责人姓名
+  - `projectDesignStartTime`：项目设计开始时间
+  - `projectDesignEndTime`：项目设计结束时间
+  - `actualCheckInTime`：实际签到时间
+  - `actualCheckOutTime`：实际签退时间
+  - `projectIsValid`：项目是否有效（参与记录 `is_valid`）
+  - `settlementHours`：结算时间（小时）
+  - `note`：备注
 
 ---
 

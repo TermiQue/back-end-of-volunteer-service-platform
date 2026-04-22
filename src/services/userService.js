@@ -185,8 +185,22 @@ export async function queryMyVolunteerProjects(conn, input) {
     offset: (page - 1) * pageSize,
   });
 
+  const mappedItems = items.map((item) => ({
+    projectName: item.project_name,
+    projectDescription: item.project_description,
+    creatorName: item.creator_name,
+    responsibleName: item.responsible_name,
+    projectDesignStartTime: item.start_time,
+    projectDesignEndTime: item.end_time,
+    actualCheckInTime: item.check_in_at,
+    actualCheckOutTime: item.check_out_at,
+    projectIsValid: item.is_valid,
+    settlementHours: item.settlement_hours,
+    note: item.note,
+  }));
+
   return {
-    items,
+    items: mappedItems,
     total,
     page,
     pageSize,
