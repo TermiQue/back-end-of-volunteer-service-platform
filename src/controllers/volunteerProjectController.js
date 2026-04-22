@@ -11,6 +11,8 @@ import {
   getVolunteerDetailForAdmin,
   PROJECT_QR_CODE_TYPE,
   queryAdminProfilesForSuperAdmin,
+  promoteVolunteerToAdmin,
+  demoteAdminToVolunteer,
   queryAppealRequests,
   scanProjectQrToken,
   searchVolunteerProjects,
@@ -206,6 +208,36 @@ export async function exportProjectParticipantsExcelAction(req, res) {
 export async function queryAdmins(req, res) {
   const admins = await queryAdminProfilesForSuperAdmin(req.currentUser);
   return res.status(200).json(ok({ items: admins }, "查询成功"));
+}
+
+/**
+ * 超级管理员提升志愿者为管理员。
+ * @param {import("express").Request} req 请求对象。
+ * @param {import("express").Response} res 响应对象。
+ * @returns {Promise<import("express").Response>} 操作结果。
+ */
+export async function promoteVolunteerToAdminAction(req, res) {
+  const userId = parseUserIdOrThrow(req.params.userId);
+  const user = await promoteVolunteerToAdmin({
+    userId,
+    operatorUser: req.currentUser,
+  });
+  return res.status(200).json(ok({ user }, "提升成功"));
+}
+
+/**
+ * 超级管理员降低管理员为志愿者。
+ * @param {import("express").Request} req 请求对象。
+ * @param {import("express").Response} res 响应对象。
+ * @returns {Promise<import("express").Response>} 操作结果。
+ */
+export async function demoteAdminToVolunteerAction(req, res) {
+  const userId = parseUserIdOrThrow(req.params.userId);
+  const user = await demoteAdminToVolunteer({
+    userId,
+    operatorUser: req.currentUser,
+  });
+  return res.status(200).json(ok({ user }, "降级成功"));
 }
 
 /**

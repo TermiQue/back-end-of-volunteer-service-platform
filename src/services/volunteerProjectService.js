@@ -35,7 +35,9 @@ import {
 } from "../dao/volunteerDao.js";
 import {
   findActiveAdminByUserId,
+  findUserById,
   queryAllAdminProfiles,
+  updateUserRoleById,
 } from "../dao/userDao.js";
 import {
   createAppeal,
@@ -868,6 +870,90 @@ export async function queryAdminProfilesForSuperAdmin(operatorUser) {
   const conn = await pool.getConnection();
   try {
     return await queryAllAdminProfiles(conn);
+  } finally {
+    conn.release();
+  }
+}
+
+/**
+ * 超级管理员提升志愿者为管理员。
+ * @param {{userId:number|string,operatorUser:{user_id:number|string,role:number}}} input 参数。
+ * @returns {Promise<object>} 更新后的用户信息。
+ */
+export async function promoteVolunteerToAdmin(input) {
+  ensureSuperAdmin(input.operatorUser);
+  const userId = parsePositiveInt(input.userId, "userId");
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const user = await findUserById(conn, userId);
+    if (!user) {
+      throw new AppError(40401, "用户不存在", 200);
+    }
+    if (user.status !== 1) {
+      throw new AppError(40001, "账号状态异常，无法调整角色", 200);
+    }
+    if (user.role === 3) {
+      throw new AppError(40001, "超级管理员无需提升", 200);
+    }
+    if (user.role === 2) {
+      throw new AppError(40001, "该用户已是管理员", 200);
+    }
+
+    await updateUserRoleById(conn, userId, 2);
+    const updated = await findUserById(conn, userId);
+
+    await conn.commit();
+    return updated;
+  } catch (error) {
+    await conn.rollback();
+    throw error;
+  } finally {
+    conn.release();
+  }
+}
+
+/**
+ * 超级管理员降低管理员为志愿者。
+ * @param {{userId:number|string,operatorUser:{user_id:number|string,role:number}}} input 参数。
+ * @returns {Promise<object>} 更新后的用户信息。
+ */
+export async function demoteAdminToVolunteer(input) {
+  ensureSuperAdmin(input.operatorUser);
+  const userId = parsePositiveInt(input.userId, "userId");
+
+  if (Number(userId) === Number(input.operatorUser.user_id)) {
+    throw new AppError(40001, "不能降低当前登录的超级管理员", 200);
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const user = await findUserById(conn, userId);
+    if (!user) {
+      throw new AppError(40401, "用户不存在", 200);
+    }
+    if (user.status !== 1) {
+      throw new AppError(40001, "账号状态异常，无法调整角色", 200);
+    }
+    if (user.role === 3) {
+      throw new AppError(40001, "不能降低超级管理员", 200);
+    }
+    if (user.role !== 2) {
+      throw new AppError(40001, "该用户不是管理员", 200);
+    }
+
+    await updateUserRoleById(conn, userId, 0);
+    const updated = await findUserById(conn, userId);
+
+    await conn.commit();
+    return updated;
+  } catch (error) {
+    await conn.rollback();
+    throw error;
   } finally {
     conn.release();
   }

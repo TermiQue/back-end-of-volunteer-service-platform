@@ -149,3 +149,21 @@ export async function updateUserById(conn, userId, { nickname, avatar_url }) {
     [nickname, avatar_url, userId]
   );
 }
+
+/**
+ * 根据用户 ID 更新角色。
+ * @param {import("mysql2/promise").PoolConnection} conn 数据库连接。
+ * @param {number|string} userId 用户 ID。
+ * @param {number} role 目标角色。
+ * @returns {Promise<void>} 无返回值。
+ */
+export async function updateUserRoleById(conn, userId, role) {
+  await conn.execute(
+    `
+    UPDATE users
+    SET role = ?, updated_at = NOW()
+    WHERE user_id = ?
+    `,
+    [role, userId]
+  );
+}

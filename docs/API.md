@@ -637,7 +637,42 @@ Query 参数:
 
 ---
 
-## 7.11 导出项目参与信息 Excel
+## 7.11 提升志愿者为管理员（超级管理员）
+
+- Method: `POST`
+- Path: `/api/admin/admins/:userId/promote`
+- 权限: 仅超级管理员
+
+规则:
+
+- 仅可提升非管理员、非超级管理员用户。
+- 目标用户必须存在且状态正常。
+
+返回:
+
+- `user`: 更新后的用户信息（`user_id`、`nickname`、`avatar_url`、`role`、`status`）
+
+---
+
+## 7.12 降低管理员为志愿者（超级管理员）
+
+- Method: `POST`
+- Path: `/api/admin/admins/:userId/demote`
+- 权限: 仅超级管理员
+
+规则:
+
+- 仅可降低普通管理员（`role=2`），不可降低超级管理员。
+- 不可降低当前登录的超级管理员自身。
+- 目标用户必须存在且状态正常。
+
+返回:
+
+- `user`: 更新后的用户信息（`user_id`、`nickname`、`avatar_url`、`role`、`status`）
+
+---
+
+## 7.13 导出项目参与信息 Excel
 
 - Method: `GET`
 - Path: `/api/admin/projects/:projectId/participants/export`
@@ -663,7 +698,7 @@ Excel 说明:
 
 ---
 
-## 7.12 查询申请列表
+## 7.14 查询申请列表
 
 - Method: `GET`
 - Path: `/api/admin/appeals`
@@ -686,7 +721,7 @@ Query 参数:
 
 ---
 
-## 7.13 审核通过申请
+## 7.15 审核通过申请
 
 - Method: `POST`
 - Path: `/api/admin/appeals/:appealId/approve`
@@ -714,7 +749,7 @@ Query 参数:
 
 ---
 
-## 7.14 审核拒绝申请
+## 7.16 审核拒绝申请
 
 - Method: `POST`
 - Path: `/api/admin/appeals/:appealId/reject`
