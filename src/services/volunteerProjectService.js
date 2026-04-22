@@ -815,6 +815,10 @@ export async function exportProjectParticipantsExcel(input) {
   try {
     const project = await getProjectOrThrow(conn, projectId);
 
+    if (Number(project.status) !== 2) {
+      throw new AppError(40001, "仅已结束项目可导出参与信息", 200);
+    }
+
     if (
       Number(input.operatorUser.role) === 2 &&
       Number(input.operatorUser.user_id) !== Number(project.responsible_id)

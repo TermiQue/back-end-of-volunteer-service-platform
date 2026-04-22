@@ -683,6 +683,10 @@ Query 参数:
 - 超级管理员: 可导出任意项目。
 - 管理员: 仅可导出自己负责的项目。
 
+状态限制:
+
+- 仅已结束项目（`status=2`）允许导出。
+
 响应:
 
 - 返回 `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` 文件流。

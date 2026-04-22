@@ -113,6 +113,7 @@
 - `GET /api/admin/projects/:projectId/participants/export`：管理员/超级管理员可访问。
 - 超级管理员可导出任意项目。
 - 管理员仅可导出自己负责的项目。
+- 仅已结束项目（`status=2`）允许导出。
 
 ### 6.5 管理员角色管理权限
 
