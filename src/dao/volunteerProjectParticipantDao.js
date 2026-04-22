@@ -304,3 +304,27 @@ export async function queryAllParticipantProjectsByUserId(conn, userId) {
 
   return Array.isArray(rows) ? rows : [];
 }
+
+/**
+ * 查询某项目参与信息导出数据。
+ * @param {import("mysql2/promise").PoolConnection} conn 数据库连接。
+ * @param {number|string} projectId 项目 ID。
+ * @returns {Promise<Array<{name:string|null,student_id:string|null,settlement_hours:number|null}>>} 导出行数据。
+ */
+export async function queryParticipantExportRowsByProjectId(conn, projectId) {
+  const [rows] = await conn.execute(
+    `
+    SELECT
+      v.name,
+      v.student_id,
+      p.settlement_hours
+    FROM volunteer_project_participants p
+    INNER JOIN volunteers v ON v.user_id = p.user_id
+    WHERE p.project_id = ?
+    ORDER BY p.id ASC
+    `,
+    [projectId]
+  );
+
+  return Array.isArray(rows) ? rows : [];
+}

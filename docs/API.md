@@ -637,7 +637,33 @@ Query 参数:
 
 ---
 
-## 7.11 查询申请列表
+## 7.11 导出项目参与信息 Excel
+
+- Method: `GET`
+- Path: `/api/admin/projects/:projectId/participants/export`
+- 权限: 管理员/超级管理员
+
+权限差异:
+
+- 超级管理员: 可导出任意项目。
+- 管理员: 仅可导出自己负责的项目。
+
+响应:
+
+- 返回 `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` 文件流。
+- 文件名规则: `项目名_项目id_时间戳.xlsx`。
+
+Excel 说明:
+
+- 表头固定为: `姓名`、`*学号`、`*时长/h`
+- 数据来源:
+  - `姓名`: 基本信息表 `volunteers.name`
+  - `*学号`: 基本信息表 `volunteers.student_id`（单元格格式为文本）
+  - `*时长/h`: 参与记录结算时长 `volunteer_project_participants.settlement_hours`（展示为整数或 `x.5`）
+
+---
+
+## 7.12 查询申请列表
 
 - Method: `GET`
 - Path: `/api/admin/appeals`
@@ -660,7 +686,7 @@ Query 参数:
 
 ---
 
-## 7.12 审核通过申请
+## 7.13 审核通过申请
 
 - Method: `POST`
 - Path: `/api/admin/appeals/:appealId/approve`
@@ -688,7 +714,7 @@ Query 参数:
 
 ---
 
-## 7.13 审核拒绝申请
+## 7.14 审核拒绝申请
 
 - Method: `POST`
 - Path: `/api/admin/appeals/:appealId/reject`

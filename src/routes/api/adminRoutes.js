@@ -9,6 +9,7 @@ import {
   updateProjectResponsibleAction,
   getProjectCheckinQr,
   getProjectCheckoutQr,
+  exportProjectParticipantsExcelAction,
   queryVolunteers,
   getVolunteerDetail,
   queryAdmins,
@@ -34,5 +35,6 @@ router.post("/admin/appeals/:appealId/approve", asyncHandler(approveAppealAction
 router.post("/admin/appeals/:appealId/reject", asyncHandler(rejectAppealAction));
 router.get("/admin/projects/:projectId/qr/checkin", asyncHandler(getProjectCheckinQr));
 router.get("/admin/projects/:projectId/qr/checkout", asyncHandler(getProjectCheckoutQr));
+router.get("/admin/projects/:projectId/participants/export", asyncHandler(exportProjectParticipantsExcelAction));
 
 export default router;

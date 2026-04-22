@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import ExcelJS from "exceljs";
 
 import { pool } from "../config/db.js";
 import {
@@ -21,6 +22,7 @@ import {
   listParticipantRecordsByProjectId,
   markParticipantInvalidWithNote,
   queryAllParticipantProjectsByUserId,
+  queryParticipantExportRowsByProjectId,
   upsertParticipantCheckIn,
   upsertParticipantCheckOut,
   updateParticipantSettlementById,
@@ -209,6 +211,33 @@ function parsePositiveInt(value, fieldName) {
     throw new AppError(40001, `参数错误: ${fieldName} 必须是正整数`, 200);
   }
   return parsed;
+}
+
+function formatHoursForExport(value) {
+  const hours = Number(value);
+  if (!Number.isFinite(hours) || hours < 0) {
+    return "";
+  }
+  if (Math.abs(hours - Math.round(hours)) < 1e-8) {
+    return String(Math.round(hours));
+  }
+  return Number(hours.toFixed(1)).toString();
+}
+
+function sanitizeFileNamePart(value) {
+  return String(value || "")
+    .replace(/[\\/:*?"<>|]/g, "_")
+    .trim();
+}
+
+function getTimestampForFileName(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hour = String(date.getHours()).padStart(2, "0");
+  const minute = String(date.getMinutes()).padStart(2, "0");
+  const second = String(date.getSeconds()).padStart(2, "0");
+  return `${year}${month}${day}${hour}${minute}${second}`;
 }
 
 function ensureProjectInProgress(project) {
@@ -761,6 +790,68 @@ export async function getVolunteerDetailForAdmin(userId) {
     return {
       volunteer,
       projects,
+    };
+  } finally {
+    conn.release();
+  }
+}
+
+/**
+ * 导出项目参与信息 Excel。
+ * 超级管理员可导出任意项目，管理员仅可导出自己负责的项目。
+ * @param {{projectId:number|string,operatorUser:{user_id:number|string,role:number}}} input 导出参数。
+ * @returns {Promise<{fileName:string,buffer:Buffer}>} 导出文件信息。
+ */
+export async function exportProjectParticipantsExcel(input) {
+  const projectId = parsePositiveInt(input.projectId, "projectId");
+
+  if (!input.operatorUser || ![2, 3].includes(Number(input.operatorUser.role))) {
+    throw new AppError(40301, "权限不足，仅管理员或超级管理员可操作", 200);
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    const project = await getProjectOrThrow(conn, projectId);
+
+    if (
+      Number(input.operatorUser.role) === 2 &&
+      Number(input.operatorUser.user_id) !== Number(project.responsible_id)
+    ) {
+      throw new AppError(40301, "权限不足，仅可导出自己负责的项目", 200);
+    }
+
+    const rows = await queryParticipantExportRowsByProjectId(conn, projectId);
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("参与信息");
+    sheet.columns = [
+      { header: "姓名", key: "name", width: 20 },
+      { header: "*学号", key: "studentId", width: 24 },
+      { header: "*时长/h", key: "hours", width: 12 },
+    ];
+
+    for (const item of rows) {
+      const row = sheet.addRow({
+        name: item.name || "",
+        studentId: item.student_id || "",
+        hours: formatHoursForExport(item.settlement_hours),
+      });
+      // 学号按文本写入，避免 Excel 自动转数字或科学计数法。
+      row.getCell(2).numFmt = "@";
+    }
+
+    const projectNameSafe = sanitizeFileNamePart(project.name || "项目");
+    const timestamp = getTimestampForFileName();
+    const fileName = `${projectNameSafe}_${project.project_id}_${timestamp}.xlsx`;
+
+    const arrayBuffer = await workbook.xlsx.writeBuffer();
+    const buffer = Buffer.isBuffer(arrayBuffer)
+      ? arrayBuffer
+      : Buffer.from(arrayBuffer);
+
+    return {
+      fileName,
+      buffer,
     };
   } finally {
     conn.release();

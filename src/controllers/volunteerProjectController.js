@@ -7,6 +7,7 @@ import {
   createVolunteerProjectDraft,
   endVolunteerProject,
   getProjectQrToken,
+  exportProjectParticipantsExcel,
   getVolunteerDetailForAdmin,
   PROJECT_QR_CODE_TYPE,
   queryAdminProfilesForSuperAdmin,
@@ -169,6 +170,31 @@ export async function getVolunteerDetail(req, res) {
   const userId = parseUserIdOrThrow(req.params.userId);
   const result = await getVolunteerDetailForAdmin(userId);
   return res.status(200).json(ok(result, "查询成功"));
+}
+
+/**
+ * 导出项目参与信息 Excel。
+ * @param {import("express").Request} req 请求对象。
+ * @param {import("express").Response} res 响应对象。
+ * @returns {Promise<void>} 直接返回文件流。
+ */
+export async function exportProjectParticipantsExcelAction(req, res) {
+  const projectId = parseProjectIdOrThrow(req.params.projectId);
+  const { fileName, buffer } = await exportProjectParticipantsExcel({
+    projectId,
+    operatorUser: req.currentUser,
+  });
+
+  const encodedFileName = encodeURIComponent(fileName);
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename="${encodedFileName}"; filename*=UTF-8''${encodedFileName}`
+  );
+  res.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  );
+  res.status(200).send(buffer);
 }
 
 /**
