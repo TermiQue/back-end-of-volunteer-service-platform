@@ -468,8 +468,6 @@ export async function createVolunteerProjectDraft(input) {
  *   status?:number|string,
  *   createdById?:number|string,
  *   responsibleId?:number|string,
- *   createdTimeFrom?:string,
- *   createdTimeTo?:string,
  *   page?:number|string,
  *   pageSize?:number|string,
  * }} input 查询参数。
@@ -497,8 +495,6 @@ export async function searchVolunteerProjects(input) {
     status: parseOptionalNonNegativeInt(input.status, "status"),
     createdById: parseOptionalPositiveInt(input.createdById, "createdById"),
     responsibleId: parseOptionalPositiveInt(input.responsibleId, "responsibleId"),
-    createdTimeFrom: parseOptionalDateTime(input.createdTimeFrom, "createdTimeFrom"),
-    createdTimeTo: parseOptionalDateTime(input.createdTimeTo, "createdTimeTo"),
     limit: pageSize,
     offset: (page - 1) * pageSize,
   };
@@ -525,15 +521,25 @@ export async function searchVolunteerProjects(input) {
   if (filters.endTimeFrom && filters.endTimeTo && filters.endTimeFrom > filters.endTimeTo) {
     throw new AppError(40001, "参数错误: endTimeFrom 不能晚于 endTimeTo", 200);
   }
-  if (filters.createdTimeFrom && filters.createdTimeTo && filters.createdTimeFrom > filters.createdTimeTo) {
-    throw new AppError(40001, "参数错误: createdTimeFrom 不能晚于 createdTimeTo", 200);
-  }
-
   const conn = await pool.getConnection();
   try {
     const { items, total } = await queryVolunteerProjects(conn, filters);
+    const mappedItems = items.map((item) => ({
+      projectId: item.project_id,
+      projectName: item.name,
+      description: item.description,
+      designStartTime: item.start_time,
+      designEndTime: item.end_time,
+      designVolunteerHours: item.duration_hours,
+      status: item.status,
+      creatorId: item.created_by_id,
+      creatorName: item.creator_name,
+      responsibleId: item.responsible_id,
+      responsibleName: item.responsible_name,
+    }));
+
     return {
-      items,
+      items: mappedItems,
       total,
       page,
       pageSize,

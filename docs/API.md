@@ -519,8 +519,21 @@ Query 参数:
 | status | number | 0/1/2 |
 | createdById | number | 创建者 |
 | responsibleId | number | 负责人 |
-| createdTimeFrom/createdTimeTo | string | 创建时间范围 |
 | page/pageSize | number | 分页 |
+
+返回字段重点:
+
+- `items[].projectId`：项目 ID
+- `items[].projectName`：项目名
+- `items[].description`：描述
+- `items[].designStartTime`：设计开始时间
+- `items[].designEndTime`：设计结束时间
+- `items[].designVolunteerHours`：设计志愿时长
+- `items[].status`：状态
+- `items[].creatorId`：创建者 ID
+- `items[].creatorName`：创建者姓名
+- `items[].responsibleId`：负责人 ID
+- `items[].responsibleName`：负责人姓名
 
 ---
 

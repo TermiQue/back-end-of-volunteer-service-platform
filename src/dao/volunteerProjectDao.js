@@ -77,7 +77,7 @@ export async function findVolunteerProjectByProjectId(conn, projectId) {
 
 /**
  * 多条件查询志愿项目。
- * 支持项目 ID、名称、开始/结束时间范围、时长范围、状态、创建者、创建时间范围的任意组合过滤。
+ * 支持项目 ID、名称、开始/结束时间范围、时长范围、状态、创建者、负责人的任意组合过滤。
  * @param {import("mysql2/promise").PoolConnection} conn 数据库连接。
  * @param {{
  *   projectId?:number,
@@ -91,8 +91,6 @@ export async function findVolunteerProjectByProjectId(conn, projectId) {
  *   status?:number,
  *   createdById?:number,
  *   responsibleId?:number,
- *   createdTimeFrom?:Date,
- *   createdTimeTo?:Date,
  *   limit:number,
  *   offset:number,
  * }} filters 查询参数。
@@ -103,58 +101,49 @@ export async function queryVolunteerProjects(conn, filters) {
   const params = [];
 
   if (filters.projectId !== undefined) {
-    whereParts.push("project_id = ?");
+    whereParts.push("p.project_id = ?");
     params.push(filters.projectId);
   }
   if (filters.name) {
-    whereParts.push("name LIKE ?");
+    whereParts.push("p.name LIKE ?");
     params.push(`%${filters.name}%`);
   }
   if (filters.startTimeFrom) {
-    whereParts.push("start_time >= ?");
+    whereParts.push("p.start_time >= ?");
     params.push(filters.startTimeFrom);
   }
   if (filters.startTimeTo) {
-    whereParts.push("start_time <= ?");
+    whereParts.push("p.start_time <= ?");
     params.push(filters.startTimeTo);
   }
   if (filters.endTimeFrom) {
-    whereParts.push("end_time >= ?");
+    whereParts.push("p.end_time >= ?");
     params.push(filters.endTimeFrom);
   }
   if (filters.endTimeTo) {
-    whereParts.push("end_time <= ?");
+    whereParts.push("p.end_time <= ?");
     params.push(filters.endTimeTo);
   }
   if (filters.durationHoursMin !== undefined) {
-    whereParts.push("duration_hours >= ?");
+    whereParts.push("p.duration_hours >= ?");
     params.push(filters.durationHoursMin);
   }
   if (filters.durationHoursMax !== undefined) {
-    whereParts.push("duration_hours <= ?");
+    whereParts.push("p.duration_hours <= ?");
     params.push(filters.durationHoursMax);
   }
   if (filters.status !== undefined) {
-    whereParts.push("status = ?");
+    whereParts.push("p.status = ?");
     params.push(filters.status);
   }
   if (filters.createdById !== undefined) {
-    whereParts.push("created_by_id = ?");
+    whereParts.push("p.created_by_id = ?");
     params.push(filters.createdById);
   }
   if (filters.responsibleId !== undefined) {
-    whereParts.push("responsible_id = ?");
+    whereParts.push("p.responsible_id = ?");
     params.push(filters.responsibleId);
   }
-  if (filters.createdTimeFrom) {
-    whereParts.push("created_at >= ?");
-    params.push(filters.createdTimeFrom);
-  }
-  if (filters.createdTimeTo) {
-    whereParts.push("created_at <= ?");
-    params.push(filters.createdTimeTo);
-  }
-
   const whereSql = whereParts.length > 0 ? `WHERE ${whereParts.join(" AND ")}` : "";
   const limit = Number.isInteger(filters.limit) && filters.limit > 0 ? filters.limit : 20;
   const offset = Number.isInteger(filters.offset) && filters.offset >= 0 ? filters.offset : 0;
@@ -162,7 +151,7 @@ export async function queryVolunteerProjects(conn, filters) {
   const [countRows] = await conn.execute(
     `
     SELECT COUNT(*) AS total
-    FROM volunteer_projects
+    FROM volunteer_projects p
     ${whereSql}
     `,
     params
@@ -170,10 +159,25 @@ export async function queryVolunteerProjects(conn, filters) {
 
   const [rows] = await conn.execute(
     `
-    SELECT ${PROJECT_SELECT_COLUMNS}
-    FROM volunteer_projects
+    SELECT
+      p.project_id,
+      p.name,
+      p.description,
+      p.start_time,
+      p.end_time,
+      p.duration_hours,
+      p.status,
+      p.created_by_id,
+      p.responsible_id,
+      p.created_at,
+      p.updated_at,
+      creator.name AS creator_name,
+      responsible.name AS responsible_name
+    FROM volunteer_projects p
+    LEFT JOIN volunteers creator ON creator.user_id = p.created_by_id
+    LEFT JOIN volunteers responsible ON responsible.user_id = p.responsible_id
     ${whereSql}
-    ORDER BY created_at DESC
+    ORDER BY p.created_at DESC
     LIMIT ${limit} OFFSET ${offset}
     `,
     params

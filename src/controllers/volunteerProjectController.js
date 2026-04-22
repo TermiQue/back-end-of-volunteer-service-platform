@@ -107,8 +107,6 @@ export async function queryProjects(req, res) {
     status: query.status,
     createdById: query.createdById,
     responsibleId: query.responsibleId,
-    createdTimeFrom: query.createdTimeFrom,
-    createdTimeTo: query.createdTimeTo,
     page: query.page,
     pageSize: query.pageSize,
   });
