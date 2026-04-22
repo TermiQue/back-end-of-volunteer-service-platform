@@ -1205,8 +1205,21 @@ export async function queryMyAppealProgress(input) {
       offset: (page - 1) * pageSize,
     });
 
+    const mappedItems = items.map((item) => ({
+      type: item.type,
+      participantId: item.participant_id,
+      projectName: item.project_name,
+      expectedReviewerName: item.expected_reviewer_name,
+      actualReviewerName: item.actual_reviewer_name,
+      status: item.status,
+      applyTime: item.apply_time,
+      reason: item.reason,
+      reviewTime: item.review_time,
+      reviewComment: item.review_comment,
+    }));
+
     return {
-      items,
+      items: mappedItems,
       total,
       page,
       pageSize,

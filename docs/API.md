@@ -481,7 +481,16 @@ Query 参数:
 返回字段重点:
 
 - `items`: 当前用户发起的申请列表
-- 每项含申请主信息、关联项目信息、审核信息（`status/review_comment/review_time`）
+- `items[].type`: 申请类型
+- `items[].participantId`: 参与记录 ID
+- `items[].projectName`: 项目名
+- `items[].expectedReviewerName`: 期望审核员姓名
+- `items[].actualReviewerName`: 实际审核员姓名
+- `items[].status`: 状态（`0` 审核中，`1` 通过，`2` 拒绝）
+- `items[].applyTime`: 申请时间
+- `items[].reason`: 申请理由
+- `items[].reviewTime`: 审核时间
+- `items[].reviewComment`: 审核意见
 
 ---
 

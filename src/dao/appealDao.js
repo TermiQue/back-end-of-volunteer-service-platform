@@ -204,12 +204,16 @@ export async function queryAppeals(conn, filters) {
       p.is_valid AS participant_is_valid,
       p.settlement_hours AS participant_settlement_hours,
       pr.name AS project_name,
+      expected_reviewer.name AS expected_reviewer_name,
+      actual_reviewer.name AS actual_reviewer_name,
       pr.duration_hours,
       pr.status AS project_status,
       pr.responsible_id
     FROM appeal a
     INNER JOIN volunteer_project_participants p ON p.id = a.participant_id
     INNER JOIN volunteer_projects pr ON pr.project_id = p.project_id
+    LEFT JOIN volunteers expected_reviewer ON expected_reviewer.user_id = a.expected_reviewer_id
+    LEFT JOIN volunteers actual_reviewer ON actual_reviewer.user_id = a.reviewer_id
     ${whereSql}
     ORDER BY a.apply_time DESC, a.id DESC
     LIMIT ${safeLimit} OFFSET ${safeOffset}
