@@ -332,17 +332,21 @@ Query 参数:
 返回字段重点:
 
 - `items[]` 字段：
-  - `projectName`：项目名
-  - `projectDescription`：项目描述
-  - `creatorName`：创建者姓名
-  - `responsibleName`：负责人姓名
-  - `projectDesignStartTime`：项目设计开始时间
-  - `projectDesignEndTime`：项目设计结束时间
-  - `actualCheckInTime`：实际签到时间
-  - `actualCheckOutTime`：实际签退时间
-  - `projectIsValid`：项目是否有效（参与记录 `is_valid`）
-  - `settlementHours`：结算时间（小时）
-  - `note`：备注
+  - `project`：项目信息
+    - `projectName`：项目名
+    - `projectDescription`：项目描述
+    - `creatorName`：创建者姓名
+    - `creatorId`：创建者 ID
+    - `responsibleName`：负责人姓名
+    - `responsibleId`：负责人 ID
+    - `projectDesignStartTime`：项目设计开始时间
+    - `projectDesignEndTime`：项目设计结束时间
+  - `participant`：参与记录信息
+    - `actualCheckInTime`：实际签到时间
+    - `actualCheckOutTime`：实际签退时间
+    - `projectIsValid`：项目是否有效（参与记录 `is_valid`）
+    - `settlementHours`：结算时间（小时）
+    - `note`：备注
 
 ---
 
@@ -432,11 +436,24 @@ Query 参数:
 
 返回字段重点:
 
+- 仅返回“当前可申请”的条目。
 - `items[].type`: 申请类型（`1/2`）
-- `items[].participantId`: 可提交申请的参与记录 ID（用于后续提交）
-- `items[].hasPendingAppeal`: 是否已有待审核申请
-- `items[].project`: 项目信息（含 `responsibleId`）
-- `items[].participant`: 参与记录关键信息（`isValid`、`settlementHours`、签到签退、`note`）
+- `items[].participantId`: 参与记录 ID
+- `items[].project`: 项目信息
+  - `projectName`: 项目名
+  - `projectDescription`: 项目描述
+  - `creatorName`: 创建者姓名
+  - `creatorId`: 创建者 ID
+  - `responsibleName`: 负责人姓名
+  - `responsibleId`: 负责人 ID
+  - `projectDesignStartTime`: 项目设计开始时间
+  - `projectDesignEndTime`: 项目设计结束时间
+- `items[].participant`: 参与记录信息
+  - `actualCheckInTime`: 实际签到时间（无则返回 `0`）
+  - `actualCheckOutTime`: 实际签退时间（无则返回 `0`）
+  - `isValid`: 是否可用（参与记录 `is_valid`）
+  - `settlementHours`: 结算时间（小时）
+  - `note`: 备注
 
 业务规则:
 

@@ -1146,22 +1146,29 @@ export async function queryAppealableTargets(input) {
       }
 
       const pendingAppeal = await findPendingAppealByParticipantId(conn, participant.id);
+      if (pendingAppeal) {
+        continue;
+      }
+
       items.push({
         type: participantType,
         participantId: participant.id,
-        hasPendingAppeal: Boolean(pendingAppeal),
         project: {
           projectId: participant.project_id,
-          name: participant.project_name,
-          durationHours: participant.duration_hours,
-          projectStatus: participant.project_status,
+          projectName: participant.project_name,
+          projectDescription: participant.project_description,
+          creatorName: participant.creator_name,
+          creatorId: participant.created_by_id,
+          responsibleName: participant.responsible_name,
           responsibleId: participant.responsible_id,
+          projectDesignStartTime: participant.start_time,
+          projectDesignEndTime: participant.end_time,
         },
         participant: {
+          actualCheckInTime: participant.check_in_at || 0,
+          actualCheckOutTime: participant.check_out_at || 0,
           isValid: participant.is_valid,
           settlementHours: participant.settlement_hours,
-          checkInAt: participant.check_in_at,
-          checkOutAt: participant.check_out_at,
           note: participant.note,
         },
       });

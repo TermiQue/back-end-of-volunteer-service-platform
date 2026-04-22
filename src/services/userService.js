@@ -186,17 +186,23 @@ export async function queryMyVolunteerProjects(conn, input) {
   });
 
   const mappedItems = items.map((item) => ({
-    projectName: item.project_name,
-    projectDescription: item.project_description,
-    creatorName: item.creator_name,
-    responsibleName: item.responsible_name,
-    projectDesignStartTime: item.start_time,
-    projectDesignEndTime: item.end_time,
-    actualCheckInTime: item.check_in_at,
-    actualCheckOutTime: item.check_out_at,
-    projectIsValid: item.is_valid,
-    settlementHours: item.settlement_hours,
-    note: item.note,
+    project: {
+      projectName: item.project_name,
+      projectDescription: item.project_description,
+      creatorName: item.creator_name,
+      creatorId: item.created_by_id,
+      responsibleName: item.responsible_name,
+      responsibleId: item.responsible_id,
+      projectDesignStartTime: item.start_time,
+      projectDesignEndTime: item.end_time,
+    },
+    participant: {
+      actualCheckInTime: item.check_in_at,
+      actualCheckOutTime: item.check_out_at,
+      projectIsValid: item.is_valid,
+      settlementHours: item.settlement_hours,
+      note: item.note,
+    },
   }));
 
   return {

@@ -234,6 +234,8 @@ export async function queryParticipantProjectsByUserId(conn, filters) {
       pr.description AS project_description,
       pr.start_time,
       pr.end_time,
+      pr.created_by_id,
+      pr.responsible_id,
       creator.name AS creator_name,
       responsible.name AS responsible_name
     FROM volunteer_project_participants p
@@ -283,10 +285,14 @@ export async function queryAllParticipantProjectsByUserId(conn, userId) {
       pr.status AS project_status,
       pr.created_by_id,
       pr.responsible_id,
+      creator.name AS creator_name,
+      responsible.name AS responsible_name,
       pr.created_at AS project_created_at,
       pr.updated_at AS project_updated_at
     FROM volunteer_project_participants p
     INNER JOIN volunteer_projects pr ON pr.project_id = p.project_id
+    LEFT JOIN volunteers creator ON creator.user_id = pr.created_by_id
+    LEFT JOIN volunteers responsible ON responsible.user_id = pr.responsible_id
     WHERE p.user_id = ?
     ORDER BY p.updated_at DESC, p.id DESC
     `,
