@@ -1136,6 +1136,7 @@ export async function queryAppealableTargets(input) {
   try {
     const projects = await queryAllParticipantProjectsByUserId(conn, applicantUserId);
     const items = [];
+    const projectPendingCache = new Map();
 
     for (const participant of projects) {
       const participantType = Number(participant.is_valid) === 0
@@ -1148,6 +1149,22 @@ export async function queryAppealableTargets(input) {
         continue;
       }
       if (type !== undefined && participantType !== type) {
+        continue;
+      }
+
+      const projectId = Number(participant.project_id);
+      let hasPendingInProject;
+      if (projectPendingCache.has(projectId)) {
+        hasPendingInProject = projectPendingCache.get(projectId);
+      } else {
+        const pendingInProject = await findPendingAppealByApplicantAndProject(conn, {
+          applicantId: applicantUserId,
+          projectId,
+        });
+        hasPendingInProject = Boolean(pendingInProject);
+        projectPendingCache.set(projectId, hasPendingInProject);
+      }
+      if (hasPendingInProject) {
         continue;
       }
 

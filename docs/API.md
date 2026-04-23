@@ -30,6 +30,11 @@ Authorization: Bearer <accessToken>
 }
 ```
 
+说明:
+
+- `data` 可能是对象、数组或 `null`（例如登出接口）。
+- 文件下载类接口直接返回二进制流，不走上述 JSON 结构。
+
 ### 2.2 失败响应
 
 ```json
@@ -419,6 +424,7 @@ Query 参数:
 说明:
 
 - 审核员由系统默认取项目负责人，前端不需要也不应传 `expectedReviewerId`。
+- 若同一参与记录已有待审核申请，或同一项目已有审核中申请，会返回 `code=40001`。
 
 ---
 
@@ -437,6 +443,9 @@ Query 参数:
 返回字段重点:
 
 - 仅返回“当前可申请”的条目。
+- 已自动排除以下不可申请项：
+  - 同一参与记录已有待审核申请。
+  - 同一项目下申请人已有审核中申请。
 - `items[].type`: 申请类型（`1/2`）
 - `items[].participantId`: 参与记录 ID
 - `items[].project`: 项目信息
@@ -491,6 +500,10 @@ Query 参数:
 - `items[].reason`: 申请理由
 - `items[].reviewTime`: 审核时间
 - `items[].reviewComment`: 审核意见
+
+说明:
+
+- 当 `status=0`（审核中）时，`actualReviewerName`、`reviewTime`、`reviewComment` 通常为 `null`。
 
 ---
 
@@ -857,7 +870,63 @@ Query 参数:
 
 ---
 
-## 10. 已废弃接口与字段
+## 10. 联调回归记录
+
+回归时间:
+
+- 2026-04-22
+
+回归环境:
+
+- Base URL: `/api`（本地实际请求使用 `http://127.0.0.1:8080`）
+- 服务健康检查: `GET /healthz` 可达（HTTP 200）
+
+本次回归覆盖结果:
+
+| 接口 | 请求 | HTTP | code | message | 结论 |
+| --- | --- | --- | --- | --- | --- |
+| `/healthz` | `GET /healthz` | 200 | - | - | 健康检查通过 |
+| `/api/content/public-file` | 缺少 `path` 参数 | 200 | 40001 | 参数错误: path 不能为空 | 参数校验符合预期 |
+| `/api/auth/refresh-token` | `POST {}`（缺少 `refreshToken`） | 200 | 40001 | 参数错误: refreshToken 不能为空 | 参数校验符合预期 |
+| `/api/appeals/targets` | 无 `Authorization` | 200 | 40101 | 缺少访问令牌 | 鉴权拦截符合预期 |
+| `/api/appeals/my` | 无 `Authorization` | 200 | 40101 | 缺少访问令牌 | 鉴权拦截符合预期 |
+| `/api/admin/projects` | 无 `Authorization` | 200 | 40101 | 缺少访问令牌 | 管理接口鉴权符合预期 |
+| `/api/admin/appeals` | 无 `Authorization` | 200 | 40101 | 缺少访问令牌 | 管理接口鉴权符合预期 |
+| `/api/login/wechat` | `POST {"code":""}` | 200 | 40001 | 参数错误: code 不能为空 | 参数校验符合预期 |
+| `/api/login/wechat` | `POST {"code":"fake-code"}` | 500 | 50000 | invalid code（微信侧返回） | 外部依赖异常形态已验证 |
+
+说明:
+
+- 本项目多数业务错误按约定返回 HTTP 200 + 业务 `code`。
+- 微信登录在调用外部微信服务失败时，可能走 HTTP 500 + `code=50000`（如 `invalid code`）。
+
+建议补充回归（需有效登录态）:
+
+- 使用真实 `accessToken` 覆盖以下核心路径：
+  - `GET /api/auth/projects`（6.1 聚合返回字段）
+  - `GET /api/appeals/targets`（6.4 仅可申请条目过滤）
+  - `GET /api/appeals/my`（6.5 10 字段返回）
+  - `GET /api/admin/projects`（7.1 返回 11 字段）
+  - `GET /api/admin/appeals`（7.14 管理员/超管可见范围）
+
+可复用命令模板:
+
+```bash
+# 1) 无鉴权回归样例
+curl -sS -X GET 'http://127.0.0.1:8080/api/appeals/my'
+
+# 2) 鉴权回归样例
+curl -sS -X GET 'http://127.0.0.1:8080/api/auth/projects?page=1&pageSize=20' \
+  -H 'Authorization: Bearer <accessToken>'
+
+# 3) 管理端回归样例
+curl -sS -X GET 'http://127.0.0.1:8080/api/admin/projects?page=1&pageSize=20' \
+  -H 'Authorization: Bearer <adminAccessToken>'
+```
+
+---
+
+## 11. 已废弃接口与字段
 
 已废弃:
 
