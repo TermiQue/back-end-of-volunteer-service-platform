@@ -348,7 +348,9 @@ export async function queryAppealsAction(req, res) {
   const result = await queryAppealRequests({
     status: query.status,
     participantId: query.participantId,
-    applicantId: query.applicantId,
+    projectName: query.projectName,
+    applicantName: query.applicantName,
+    applicantStudentId: query.applicantStudentId,
     expectedReviewerId: query.expectedReviewerId,
     page: query.page,
     pageSize: query.pageSize,

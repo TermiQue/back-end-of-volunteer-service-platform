@@ -421,7 +421,6 @@ export async function createVolunteerProjectDraft(input) {
   }
 
   const durationHours = parseDurationHours(input.durationHours);
-
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
@@ -1128,6 +1127,8 @@ export async function scanProjectQrToken(input) {
 export async function queryAppealableTargets(input) {
   const applicantUserId = parsePositiveInt(input.applicantUser?.user_id, "user_id");
   const type = parseOptionalPositiveInt(input.type, "type");
+  const appealableWindowMs = 7 * 24 * 60 * 60 * 1000;
+  const now = Date.now();
   if (type !== undefined && !Object.values(APPEAL_TARGET_TYPE).includes(type)) {
     throw new AppError(40001, "参数错误: type 仅支持 1, 2", 200);
   }
@@ -1139,6 +1140,23 @@ export async function queryAppealableTargets(input) {
     const projectPendingCache = new Map();
 
     for (const participant of projects) {
+      const participantRelevantTime =
+        participant.check_out_at ||
+        participant.check_in_at ||
+        participant.end_time ||
+        participant.start_time ||
+        null;
+      const participantRelevantTimeMs = participantRelevantTime
+        ? new Date(participantRelevantTime).getTime()
+        : NaN;
+      if (
+        !Number.isFinite(participantRelevantTimeMs) ||
+        participantRelevantTimeMs > now ||
+        now - participantRelevantTimeMs > appealableWindowMs
+      ) {
+        continue;
+      }
+
       const participantType = Number(participant.is_valid) === 0
         ? APPEAL_TARGET_TYPE.INVALID_RECORD
         : (Number(participant.is_valid) === 1 && participant.settlement_hours !== null
@@ -1341,7 +1359,7 @@ export async function createAppealRequest(input) {
 /**
  * 管理员查询申请列表。
  * 普通管理员仅能看到自己负责审核的申请；超级管理员可查看全部。
- * @param {{status?:number|string,participantId?:number|string,applicantId?:number|string,expectedReviewerId?:number|string,page?:number|string,pageSize?:number|string,currentUser:{user_id:number|string,role:number}}} input 查询参数。
+ * @param {{status?:number|string,participantId?:number|string,projectName?:string,applicantName?:string,applicantStudentId?:string,expectedReviewerId?:number|string,page?:number|string,pageSize?:number|string,currentUser:{user_id:number|string,role:number}}} input 查询参数。
  * @returns {Promise<{items:object[],total:number,page:number,pageSize:number}>} 分页结果。
  */
 export async function queryAppealRequests(input) {
@@ -1362,7 +1380,12 @@ export async function queryAppealRequests(input) {
   const filters = {
     status,
     participantId: parseOptionalPositiveInt(input.participantId, "participantId"),
-    applicantId: parseOptionalPositiveInt(input.applicantId, "applicantId"),
+    projectName: typeof input.projectName === "string" ? input.projectName.trim() || undefined : undefined,
+    applicantName: typeof input.applicantName === "string" ? input.applicantName.trim() || undefined : undefined,
+    applicantStudentId:
+      typeof input.applicantStudentId === "string"
+        ? input.applicantStudentId.trim() || undefined
+        : undefined,
     expectedReviewerId: parseOptionalPositiveInt(input.expectedReviewerId, "expectedReviewerId"),
     reviewerUserId: input.currentUser.role === 3 ? undefined : Number(input.currentUser.user_id),
     limit: pageSize,

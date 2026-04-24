@@ -724,6 +724,7 @@ Query 参数:
 返回字段重点:
 
 - 仅返回“当前可申请”的条目。
+- 仅返回近 7 天内的可申请记录。
 - 已自动排除以下不可申请项：
   - 同一参与记录已有待审核申请。
   - 同一项目下申请人已有审核中申请。
@@ -1545,7 +1546,9 @@ Query 参数:
 | --- | --- | --- |
 | status | string/number | `all` 或不传=全部；`0` 待审核，`1` 通过，`2` 拒绝 |
 | participantId | number | 参与记录 ID |
-| applicantId | number | 申请人 ID |
+| projectName | string | 项目名模糊匹配 |
+| applicantName | string | 申请人姓名模糊匹配 |
+| applicantStudentId | string | 申请人学号模糊匹配 |
 | expectedReviewerId | number | 期望审核员 |
 | page/pageSize | number | 分页 |
 
@@ -1567,6 +1570,10 @@ Query 参数:
         "type": 2,
         "participant_id": 9001,
         "applicant_id": 101,
+        "applicant_name": "张三",
+        "applicant_student_id": "20230001",
+        "applicant_nickname": "微信用户101",
+        "applicant_phone": "13800000000",
         "expected_reviewer_id": 2002,
         "time": "2.5",
         "reason": "当日提前到场，申请修正时长",
@@ -1597,6 +1604,10 @@ Query 参数:
 | items[].type | number | 申请类型：1 无效记录申诉，2 时长变更 |
 | items[].participant_id | number | 参与记录 ID |
 | items[].applicant_id | number | 申请人用户 ID |
+| items[].applicant_name | string/null | 申请人姓名 |
+| items[].applicant_student_id | string/null | 申请人学号 |
+| items[].applicant_nickname | string/null | 申请人昵称 |
+| items[].applicant_phone | string/null | 申请人联系电话 |
 | items[].expected_reviewer_id | number | 期望审核员用户 ID |
 | items[].time | string/number | 申请时长 |
 | items[].reason | string | 申请理由 |

@@ -142,7 +142,7 @@ export async function reviewAppealById(conn, input) {
 /**
  * 查询申请列表。
  * @param {import("mysql2/promise").PoolConnection} conn 数据库连接。
- * @param {{status?:number,participantId?:number,applicantId?:number,expectedReviewerId?:number,reviewerUserId?:number,limit:number,offset:number}} filters 查询条件。
+ * @param {{status?:number,participantId?:number,projectName?:string,applicantName?:string,applicantStudentId?:string,expectedReviewerId?:number,reviewerUserId?:number,limit:number,offset:number}} filters 查询条件。
  * @returns {Promise<{items:object[],total:number}>} 列表与总数。
  */
 export async function queryAppeals(conn, filters) {
@@ -160,9 +160,17 @@ export async function queryAppeals(conn, filters) {
     whereParts.push("a.participant_id = ?");
     params.push(filters.participantId);
   }
-  if (filters.applicantId !== undefined) {
-    whereParts.push("a.applicant_id = ?");
-    params.push(filters.applicantId);
+  if (filters.projectName) {
+    whereParts.push("pr.name LIKE ?");
+    params.push(`%${filters.projectName}%`);
+  }
+  if (filters.applicantName) {
+    whereParts.push("applicant_profile.name LIKE ?");
+    params.push(`%${filters.applicantName}%`);
+  }
+  if (filters.applicantStudentId) {
+    whereParts.push("applicant_profile.student_id LIKE ?");
+    params.push(`%${filters.applicantStudentId}%`);
   }
   if (filters.expectedReviewerId !== undefined) {
     whereParts.push("a.expected_reviewer_id = ?");
@@ -179,6 +187,9 @@ export async function queryAppeals(conn, filters) {
     `
     SELECT COUNT(*) AS total
     FROM appeal a
+    INNER JOIN volunteer_project_participants p ON p.id = a.participant_id
+    INNER JOIN volunteer_projects pr ON pr.project_id = p.project_id
+    LEFT JOIN volunteers applicant_profile ON applicant_profile.user_id = a.applicant_id
     ${whereSql}
     `,
     params
@@ -191,6 +202,10 @@ export async function queryAppeals(conn, filters) {
       a.type,
       a.participant_id,
       a.applicant_id,
+      applicant_profile.name AS applicant_name,
+      applicant_profile.student_id AS applicant_student_id,
+      applicant_profile.phone AS applicant_phone,
+      applicant_user.nickname AS applicant_nickname,
       a.expected_reviewer_id,
       a.time,
       a.reason,
@@ -212,6 +227,8 @@ export async function queryAppeals(conn, filters) {
     FROM appeal a
     INNER JOIN volunteer_project_participants p ON p.id = a.participant_id
     INNER JOIN volunteer_projects pr ON pr.project_id = p.project_id
+    LEFT JOIN volunteers applicant_profile ON applicant_profile.user_id = a.applicant_id
+    LEFT JOIN users applicant_user ON applicant_user.user_id = a.applicant_id
     LEFT JOIN volunteers expected_reviewer ON expected_reviewer.user_id = a.expected_reviewer_id
     LEFT JOIN volunteers actual_reviewer ON actual_reviewer.user_id = a.reviewer_id
     ${whereSql}
