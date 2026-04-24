@@ -23,6 +23,7 @@ import {
   refreshVolunteerDerivedFieldsByUserId,
 } from "../dao/volunteerDao.js";
 import { queryParticipantProjectsByUserId } from "../dao/volunteerProjectParticipantDao.js";
+import { createWelcomeVolunteerNotification } from "./notificationService.js";
 
 /**
  * 根据微信 code 查找或创建业务用户。
@@ -51,6 +52,7 @@ export async function findOrCreateUserByWechat(conn, code) {
   const nickname = `微信用户${userId}`;
 
   await updateUserNickname(conn, userId, nickname);
+  await createWelcomeVolunteerNotification(conn, userId);
 
   const createdUser = await findUserById(conn, userId);
   return { user: createdUser, wechatData };

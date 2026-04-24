@@ -12,6 +12,11 @@ import {
 	refreshProfileSummary,
 	myProjects,
 } from '../../controllers/authController.js';
+import {
+	queryMyNotificationsAction,
+	markMyNotificationReadAction,
+	softDeleteMyNotificationAction,
+} from '../../controllers/notificationController.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { requireAuth } from '../../utils/auth.js';
 import { avatarUpload } from '../../utils/upload.js';
@@ -29,6 +34,9 @@ router.post('/auth/avatar', requireAuth, avatarUpload.single('avatar'), asyncHan
 router.post('/auth/profile', requireAuth, asyncHandler(profile));
 router.post('/auth/profile/refresh', requireAuth, asyncHandler(refreshProfileSummary));
 router.get('/auth/projects', requireAuth, asyncHandler(myProjects));
+router.get('/auth/notifications', requireAuth, asyncHandler(queryMyNotificationsAction));
+router.post('/auth/notifications/:notificationId/read', requireAuth, asyncHandler(markMyNotificationReadAction));
+router.delete('/auth/notifications/:notificationId', requireAuth, asyncHandler(softDeleteMyNotificationAction));
 
 
 export default router;

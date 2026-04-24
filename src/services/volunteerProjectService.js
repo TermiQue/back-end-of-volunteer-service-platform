@@ -49,6 +49,10 @@ import {
   reviewAppealById,
 } from "../dao/appealDao.js";
 import { AppError, isMysqlDuplicateKeyError } from "../utils/errors.js";
+import {
+  createCheckInNotification,
+  createCheckOutNotification,
+} from "./notificationService.js";
 
 export const PROJECT_QR_CODE_TYPE = {
   CHECK_IN: 1,
@@ -1087,6 +1091,15 @@ export async function scanProjectQrToken(input) {
         source: ATTENDANCE_SOURCE.QR,
         checkInAt: now,
       });
+      await createCheckInNotification(conn, {
+        receiverId: input.userId,
+        date: now,
+        obj: project.name || "",
+        extraData: {
+          project_id: project.project_id,
+          participant_user_id: Number(input.userId),
+        },
+      });
     }
 
     if (isCheckOut) {
@@ -1095,6 +1108,15 @@ export async function scanProjectQrToken(input) {
         userId: input.userId,
         source: ATTENDANCE_SOURCE.QR,
         checkOutAt: now,
+      });
+      await createCheckOutNotification(conn, {
+        receiverId: input.userId,
+        date: now,
+        obj: project.name || "",
+        extraData: {
+          project_id: project.project_id,
+          participant_user_id: Number(input.userId),
+        },
       });
     }
 

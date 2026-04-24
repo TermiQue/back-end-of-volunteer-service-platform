@@ -157,3 +157,26 @@ CREATE TABLE `appeal` (
                           CONSTRAINT `fk_appeal_reviewer` FOREIGN KEY (`reviewer_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL,
                           CHECK (`status` IN (0,1,2))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ======================================================
+-- 9. 通知表
+-- ======================================================
+CREATE TABLE `notifications` (
+                                 `id` bigint NOT NULL AUTO_INCREMENT COMMENT '通知ID',
+                                 `type` varchar(50) NOT NULL COMMENT '通知类型',
+                                 `title` varchar(200) NOT NULL DEFAULT '' COMMENT '通知标题',
+                                 `content` text COMMENT '通知内容',
+                                 `sender_id` int DEFAULT NULL COMMENT '发送者用户ID，NULL表示系统发送',
+                                 `receiver_id` int NOT NULL DEFAULT 0 COMMENT '接收者用户ID',
+                                 `extra_data` json DEFAULT NULL COMMENT '扩展数据，如{"project_id":1, "appeal_id":2}',
+                                 `redirect_url` varchar(500) DEFAULT NULL COMMENT '点击跳转的小程序页面路径',
+                                 `is_read` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否已读 0-未读 1-已读',
+                                 `is_deleted` tinyint(1) NOT NULL DEFAULT 0 COMMENT '软删除 0-正常 1-已删除',
+                                 `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                 `read_at` datetime DEFAULT NULL COMMENT '阅读时间',
+                                 PRIMARY KEY (`id`),
+                                 KEY `idx_receiver_read_deleted_time` (`receiver_id`, `is_read`, `is_deleted`, `created_at`),
+                                 KEY `idx_type` (`type`),
+                                 KEY `idx_sender` (`sender_id`),
+                                 CONSTRAINT `fk_notification_sender` FOREIGN KEY (`sender_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统通知表';

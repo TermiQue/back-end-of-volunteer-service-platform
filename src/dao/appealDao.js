@@ -216,6 +216,8 @@ export async function queryAppeals(conn, filters) {
       a.review_comment,
       p.project_id,
       p.user_id AS participant_user_id,
+      p.check_in_at,
+      p.check_out_at,
       p.is_valid AS participant_is_valid,
       p.settlement_hours AS participant_settlement_hours,
       pr.name AS project_name,
